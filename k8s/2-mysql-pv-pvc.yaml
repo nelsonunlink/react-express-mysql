@@ -1,3 +1,5 @@
+# PersistentVolume for MySQL data storage
+# Uses hostPath for Minikube - for production, use cloud provider storage class
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -6,11 +8,15 @@ spec:
   capacity:
     storage: 2Gi
   accessModes:
+    # ReadWriteOnce: Can be mounted as read-write by a single node
     - ReadWriteOnce
   hostPath:
+    # Minikube-specific: Data persists on the Minikube VM
     path: /data/mysql
+  # Retain: Keep data even after PVC is deleted
   persistentVolumeReclaimPolicy: Retain
 ---
+# PersistentVolumeClaim - Requests storage from available PersistentVolumes
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

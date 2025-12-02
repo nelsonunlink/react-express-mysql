@@ -1,3 +1,5 @@
+# Backend Service - Exposes backend pods to other services and Ingress
+# Ingress routes /api/* requests to this service
 apiVersion: v1
 kind: Service
 metadata:
@@ -12,4 +14,5 @@ spec:
     protocol: TCP
     port: 8080
     targetPort: 8080
+  # ClusterIP: Only accessible within the cluster (Ingress will route external traffic)
   type: ClusterIP

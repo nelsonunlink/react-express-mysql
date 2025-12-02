@@ -1,0 +1,15 @@
+# ConfigMap containing MySQL initialization script
+# This runs once when the MySQL container starts for the first time
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init-script
+  labels:
+    app: mysql
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS testdb;
+    USE testdb;
+    
+    -- Sequelize will auto-create tables
+    -- This script ensures the database exists

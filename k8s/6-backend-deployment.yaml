@@ -1,3 +1,5 @@
+# Backend API Deployment - Express.js REST API server
+# Handles all /api/* requests from the frontend via Ingress
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,6 +7,7 @@ metadata:
   labels:
     app: backend
 spec:
+  # 2 replicas for high availability
   replicas: 2
   selector:
     matchLabels:
@@ -17,10 +20,13 @@ spec:
       containers:
       - name: backend
         image: react-mysql-backend:latest
-        imagePullPolicy: IfNotPresent
+        # For Minikube local images, use 'Never'. For production, use 'Always' with proper image tags (not :latest)
+        imagePullPolicy: Never
         ports:
         - containerPort: 8080
+        # Environment variables from ConfigMap and Secret
         env:
+        # Database connection settings from ConfigMap
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
@@ -36,36 +42,42 @@ spec:
             configMapKeyRef:
               name: backend-config
               key: DB_USER
+        # Sensitive data from Secret
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secret
               key: mysql-root-password
+        # CORS configuration
         - name: CORS_ORIGIN
           valueFrom:
             configMapKeyRef:
               name: backend-config
               key: CORS_ORIGIN
+        # Readiness Probe: Must pass before receiving traffic
+        # Checks if app is ready to handle requests
         readinessProbe:
           httpGet:
             path: /
             port: 8080
-          initialDelaySeconds: 5
+          initialDelaySeconds: 5     # Node.js starts quickly
           periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 5
+        # Liveness Probe: Restarts pod if unhealthy
         livenessProbe:
           httpGet:
             path: /
             port: 8080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 30    # Allow time for DB connection
           periodSeconds: 20
           timeoutSeconds: 5
           failureThreshold: 3
+        # Resource Management for Node.js app
         resources:
           requests:
-            cpu: "200m"
-            memory: "256Mi"
+            cpu: "200m"              # 0.2 CPU cores minimum
+            memory: "256Mi"          # 256MB RAM minimum
           limits:
-            cpu: "500m"
-            memory: "512Mi"
+            cpu: "500m"              # 0.5 CPU cores maximum
+            memory: "512Mi"          # 512MB RAM maximum

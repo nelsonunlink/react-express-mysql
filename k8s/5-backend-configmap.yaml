@@ -6,5 +6,7 @@ data:
   DB_HOST: "mysql-service"
   DB_NAME: "testdb"
   DB_USER: "root"
-  CORS_ORIGIN: "http://myapp.local"
+  # CORS_ORIGIN: "*" allows all origins - for development only
+  # For production, use specific origin like "http://myapp.local"
+  CORS_ORIGIN: "*"
   # In the React app we will use REACT_APP_API_URL via Ingress; keep backend host-based config here

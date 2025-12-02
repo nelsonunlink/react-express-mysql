@@ -1,3 +1,5 @@
+# MySQL Deployment - Single replica database instance
+# Note: For production, consider using MySQL Operator or managed database service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,6 +7,7 @@ metadata:
   labels:
     app: mysql
 spec:
+  # Single replica - MySQL doesn't support multi-write by default
   replicas: 1
   selector:
     matchLabels:
@@ -22,38 +25,55 @@ spec:
         - containerPort: 3306
           name: mysql
         env:
+        # Password from Kubernetes Secret for security
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
               name: mysql-secret
               key: mysql-root-password
+        # Database to create on startup
         - name: MYSQL_DATABASE
           value: "testdb"
+        # Readiness Probe: Determines when pod can receive traffic
+        # MySQL takes time to initialize on first start
         readinessProbe:
           tcpSocket:
             port: 3306
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 6
+          initialDelaySeconds: 15    # Wait 15s before first check
+          periodSeconds: 10          # Check every 10s
+          timeoutSeconds: 5          # Probe timeout
+          failureThreshold: 6        # Allow 6 failures (60s total)
+        # Liveness Probe: Determines if pod is healthy and should restart
         livenessProbe:
           tcpSocket:
             port: 3306
-          initialDelaySeconds: 60
-          periodSeconds: 20
+          initialDelaySeconds: 60    # MySQL needs time to fully start
+          periodSeconds: 20          # Check every 20s
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 3        # Restart after 3 failures
+        # Resource Management
         resources:
           requests:
-            cpu: "250m"
+            # Minimum guaranteed resources
+            cpu: "250m"              # 0.25 CPU cores
             memory: "512Mi"
           limits:
-            cpu: "500m"
+            # Maximum allowed resources
+            cpu: "500m"              # 0.5 CPU cores
             memory: "1Gi"
         volumeMounts:
+        # Persistent data storage
         - name: mysql-storage
           mountPath: /var/lib/mysql
+        # Mount init script to run on first startup
+        - name: mysql-init
+          mountPath: /docker-entrypoint-initdb.d
       volumes:
+      # Persistent Volume Claim for data persistence
       - name: mysql-storage
         persistentVolumeClaim:
           claimName: mysql-pvc
+      # Init script ConfigMap volume
+      - name: mysql-init
+        configMap:
+          name: mysql-init-script

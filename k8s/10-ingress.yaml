@@ -1,15 +1,26 @@
+# Ingress - Routes external traffic to internal services
+# Enables path-based routing: /api/* -> backend, /* -> frontend
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: app-ingress
   labels:
     app: ingress
+  annotations:
+    # Disable SSL redirect for local development
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Enable regex for path matching
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
+  # Use nginx ingress controller (must be enabled in Minikube)
   ingressClassName: nginx
   rules:
+  # Host-based routing - add to /etc/hosts: <minikube-ip> myapp.local
   - host: myapp.local
     http:
       paths:
+      # API requests go to backend service
+      # Prefix match: /api, /api/tutorials, /api/tutorials/1, etc.
       - path: /api
         pathType: Prefix
         backend:
@@ -17,6 +28,8 @@ spec:
             name: backend-service
             port:
               number: 8080
+      # All other requests go to frontend
+      # Note: More specific paths should be listed first
       - path: /
         pathType: Prefix
         backend:
