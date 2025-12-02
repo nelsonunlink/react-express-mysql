@@ -1,3 +1,5 @@
+# Frontend Deployment - React app served by nginx
+# Serves static files and proxies API calls to backend via Ingress
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,6 +7,7 @@ metadata:
   labels:
     app: frontend
 spec:
+  # 2 replicas for high availability
   replicas: 2
   selector:
     matchLabels:
@@ -17,17 +20,20 @@ spec:
       containers:
       - name: frontend
         image: react-mysql-frontend:latest
-        imagePullPolicy: IfNotPresent
+        # For Minikube local images, use 'Never'. For production, use 'Always' with proper image tags (not :latest)
+        imagePullPolicy: Never
         ports:
         - containerPort: 80
+        # Readiness Probe: nginx starts almost instantly
         readinessProbe:
           httpGet:
             path: /
             port: 80
-          initialDelaySeconds: 5
+          initialDelaySeconds: 5     # nginx starts quickly
           periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 5
+        # Liveness Probe: Ensures nginx is still responding
         livenessProbe:
           httpGet:
             path: /
@@ -36,10 +42,11 @@ spec:
           periodSeconds: 20
           timeoutSeconds: 5
           failureThreshold: 3
+        # Resource Management - nginx is lightweight
         resources:
           requests:
-            cpu: "100m"
-            memory: "128Mi"
+            cpu: "100m"              # 0.1 CPU cores minimum
+            memory: "128Mi"          # 128MB RAM minimum
           limits:
-            cpu: "300m"
-            memory: "256Mi"
+            cpu: "300m"              # 0.3 CPU cores maximum
+            memory: "256Mi"          # 256MB RAM maximum

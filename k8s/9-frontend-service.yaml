@@ -1,3 +1,5 @@
+# Frontend Service - Exposes frontend pods to Ingress
+# Ingress routes /* requests to this service
 apiVersion: v1
 kind: Service
 metadata:
@@ -12,4 +14,5 @@ spec:
     protocol: TCP
     port: 80
     targetPort: 80
+  # ClusterIP: Only accessible within the cluster (Ingress will route external traffic)
   type: ClusterIP
